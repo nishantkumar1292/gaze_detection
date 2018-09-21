@@ -1,18 +1,33 @@
 import cv2
 import math
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import urllib
 import os
+import requests
+import threading
+import redis
 
 face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 eyes_cascade = cv2.CascadeClassifier('haarcascade_eye.xml')
 
+
 def run_for_video(video_url):
-	video_path = download_video(video_url)
-	response = analyse_video(video_path)
+	r = redis.Redis(host='localhost')
+	truth_value, message = is_url_valid(video_url)
+	if truth_value:
+		video_path = download_video(video_url)
+		response = analyse_video(video_path)
+	else:
+		response = {"error": message}
 	return response
+
+def is_url_valid(url):
+	try:
+		r = requests.head(url)
+	except requests.exceptions.MissingSchema as err:
+		return False, str(err)
+	return r.status_code == requests.codes.ok, "file not found at url"
 
 def download_video(url):
 	directory = 'videos'
@@ -28,7 +43,11 @@ def analyse_video(video_path):
 	distances, angles, video_frames, face_frames, eye_frames = get_gaze_points(video_path)
 	external_help_score = get_gaze_analysis(distances, angles)
 	face_confidence, eye_confidence = (face_frames*1.0)/video_frames, (eye_frames*1.0)/video_frames
-	return {"face_confidence": face_confidence, "eye_confidence": eye_confidence, "score": external_help_score}
+	insight = False
+	if external_help_score>70:
+		insight = True
+	response = {"face_confidence": face_confidence, "eye_confidence": eye_confidence, "gaze_score": external_help_score, "insight": insight}
+	return response
 
 
 def get_gaze_points(video_path):
@@ -110,5 +129,5 @@ def get_label(row):
 	else:
 		return "NA"
 
-run_for_video('https://s3.ap-south-1.amazonaws.com/fjinterviewanswersmumbai/209115a3d1a1b81f3620171222201339.mp4')
+# run_for_video('https://s3.ap-south-1.amazonaws.com/fjinterviewanswersmumbai/209115a3d1a1b81f3620171222201339.mp4')
 # analyse_video(0)
