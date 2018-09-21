@@ -56,7 +56,7 @@ def get_features_new(audio_file):
 
 def clustering(features):
 	data = pd.DataFrame(features.T)
-	kmeans = KMeans(n_clusters=2, n_jobs=multiprocessing.cpu_count()-1, max_iter=600) # Number of clusters must be 3 - one for one speaker, one for other and one for noise
+	kmeans = KMeans(n_clusters=2, max_iter=600) # Number of clusters must be 3 - one for one speaker, one for other and one for noise
 	kmeans.fit(data)
 	labels = kmeans.predict(data)
 	unique, counts = np.unique(labels, return_counts=True)
