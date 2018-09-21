@@ -99,6 +99,8 @@ def get_gaze_analysis(distances, angles):
 
 def get_score(df, threshold_distance):
 	total_row_count = df.shape[0]
+	if total_row_count == 0:
+		total_row_count = 1.0
 	filtered_row_count = df[df['distance']>threshold_distance].shape[0]
 	if (filtered_row_count*1.0)/total_row_count<0.3:
 		return 0.0
