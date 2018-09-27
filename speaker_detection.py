@@ -66,18 +66,7 @@ def get_second_speaker_score(counts, features):
 	score = abs((counts[0] - counts[1])/2.0)/(features.shape[1]*1.0)
 	return score
 
-def download_video(url):
-	directory = 'videos'
-	if not os.path.exists(directory):
-		os.makedirs(directory)
-	video = url.split("/")[-1]
-	video_path = os.path.join(directory, video)
-	if not os.path.exists(video_path):
-		urllib.urlretrieve (url, video_path)
-	return video_path
-
-def get_multispeaker_score(url):
-	video_file = download_video(url)
+def get_multispeaker_score(video_path):
 	#from video extract audio
 	audio_path = convert_to_audio(video_file)
 	features = get_features_new(audio_path)

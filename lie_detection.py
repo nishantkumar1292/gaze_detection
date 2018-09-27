@@ -14,17 +14,6 @@ def get_lie_detection(video_path):
 		response = json.load(file)
 	return response
 
-def download_video(url):
-	directory = 'videos'
-	if not os.path.exists(directory):
-		os.makedirs(directory)
-	video = url.split("/")[-1]
-	video_path = os.path.join(directory, video)
-	if not os.path.exists(video_path):
-		urllib.urlretrieve (url, video_path)
-	return video_path
-
-def get_lie_score(url):
-	video_path = download_video(url)
+def get_lie_score(video_path):
 	response = get_lie_detection(video_path)
 	return response

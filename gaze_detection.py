@@ -11,36 +11,8 @@ import redis
 face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 eyes_cascade = cv2.CascadeClassifier('haarcascade_eye.xml')
 
-
-def run_for_video(video_url):
-	r = redis.Redis(host='localhost')
-	truth_value, message = is_url_valid(video_url)
-	if truth_value:
-		video_path = download_video(video_url)
-		response = analyse_video(video_path)
-	else:
-		response = {"error": message}
-	return response
-
-def is_url_valid(url):
-	try:
-		r = requests.head(url)
-	except requests.exceptions.MissingSchema as err:
-		return False, str(err)
-	return r.status_code == requests.codes.ok, "file not found at url"
-
-def download_video(url):
-	directory = 'videos'
-	if not os.path.exists(directory):
-		os.makedirs(directory)
-	video = url.split("/")[-1]
-	video_path = os.path.join(directory, video)
-	if not os.path.exists(video_path):
-		urllib.urlretrieve (url, video_path)
-	return video_path
-
-def analyse_video(video_path):
-	distances, angles, video_frames, face_frames, eye_frames = get_gaze_points(video_path)
+def analyse_video(video_path, frame_rate):
+	distances, angles, video_frames, face_frames, eye_frames = get_gaze_points(video_path, frame_rate)
 	external_help_score = get_gaze_analysis(distances, angles)
 	face_confidence, eye_confidence = (face_frames*1.0)/video_frames, (eye_frames*1.0)/video_frames
 	insight = False
@@ -50,11 +22,12 @@ def analyse_video(video_path):
 	return response
 
 
-def get_gaze_points(video_path):
+def get_gaze_points(video_path, frame_rate):
 	distances = []
 	angles = []
 	cap = cv2.VideoCapture(video_path)
 	video_frames = 0
+	counted_frames = 0
 	face_frames = 0
 	eye_frames = 0
 	while cap.isOpened():
@@ -62,7 +35,10 @@ def get_gaze_points(video_path):
 		if img is None:
 			cap.release()
 			break
-		video_frames += 1
+		video_frames += 1		
+		if (video_frames-1)%frame_rate != 0:
+			continue
+		counted_frames += 1
 		gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 		faces = face_cascade.detectMultiScale(gray)
 		for (x,y,w,h) in faces:
@@ -84,7 +60,7 @@ def get_gaze_points(video_path):
 				angles.append(angle)
 				if len(distances)%10==0:
 					print("{} frames done".format(len(distances)))
-	return distances, angles, video_frames, face_frames, eye_frames
+	return distances, angles, counted_frames, face_frames, eye_frames
 
 def get_gaze_analysis(distances, angles):
 	#constriants
